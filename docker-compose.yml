@@ -1,0 +1,26 @@
+version: '2'
+services:
+  identity_manager:
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/identity_manager.dockerfile
+    volumes:
+      - "identity:/identity"
+    restart: always
+    environment:
+      - CRYPTO_PATH=/identity/
+      - DANE_ID=${DANE_ID}
+  message_sender:
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/message_sender.dockerfile
+    volumes:
+      - "identity:/identity"
+    restart: always
+    environment:
+      - MQTT_HOST=broker.hivemq.com
+      - MQTT_PORT=1883
+      - CRYPTO_PATH=/identity/
+      - DANE_ID=${DANE_ID}
+volumes:
+    identity:
