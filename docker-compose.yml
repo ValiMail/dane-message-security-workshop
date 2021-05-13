@@ -22,5 +22,20 @@ services:
       - MQTT_PORT=1883
       - CRYPTO_PATH=/identity/
       - DANE_ID=${DANE_ID}
+  message_receiver:
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/message_receiver.dockerfile
+    volumes:
+      - "identity:/identity"
+      - "message_cache:/var/messages"
+    restart: always
+    environment:
+      - MQTT_HOST=broker.hivemq.com
+      - MQTT_PORT=1883
+      - CRYPTO_PATH=/identity/
+      - DANE_ID=${DANE_ID}
+      - CACHE_FILE_PATH=/var/messages/messages.txt
 volumes:
     identity:
+    message_cache:
