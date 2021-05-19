@@ -23,4 +23,4 @@ WORKDIR /application/${APP_NAME}/src
 COPY ${SRC_BASE_PATH}/src .
 COPY ./shared_libs/idlib ./idlib
 
-CMD python3 ./application.py
+CMD balena-idle

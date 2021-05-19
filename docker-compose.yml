@@ -1,6 +1,7 @@
 version: '2'
 services:
   identity_manager:
+    container_name: identity_manager
     build:
       context: ./
       dockerfile: ./dockerfiles/identity_manager.dockerfile
@@ -11,6 +12,7 @@ services:
       - CRYPTO_PATH=/identity/
       - DANE_ID=${DANE_ID}
   message_sender:
+    container_name: message_sender
     build:
       context: ./
       dockerfile: ./dockerfiles/message_sender.dockerfile
@@ -23,6 +25,7 @@ services:
       - CRYPTO_PATH=/identity/
       - DANE_ID=${DANE_ID}
   message_receiver:
+    container_name: message_receiver
     build:
       context: ./
       dockerfile: ./dockerfiles/message_receiver.dockerfile
