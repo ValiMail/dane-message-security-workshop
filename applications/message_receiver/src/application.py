@@ -82,21 +82,23 @@ def main():
             if not thread.is_alive():
                 print("\tThread {} is dead, bailing out.".format(thread.name))
                 BAIL = True
+        print("Allowed domains: {}".format(", ".join(ALLOWED_DOMAINS)))
         if BAIL is True:
             break
         time.sleep(60)
     print("Cleaning up!")
     for thread in threads:
-        thread.join(30)
-    sys.exit(0)
+        thread.join(2)
+    sys.exit(1)
 
 def set_allowed_domains():
     """Set global for allowed sender domains."""
     global ALLOWED_DOMAINS
     with open("/etc/allowed_domains.txt", "r") as permit_file:
         for line in permit_file.readlines():
-            if is_a_valid_domain_name(line):
-                ALLOWED_DOMAINS.append(line)
+            cleanline = line.strip("\n")
+            if is_a_valid_domain_name(cleanline):
+                ALLOWED_DOMAINS.append(cleanline)
 
 
 def mqtt_message_callback(client, userdata, msg):
@@ -167,7 +169,7 @@ def message_authentication_thread():
     """Get messages from decrypted queue, auth and drop to filebeat socket."""
     global DECRYPTED_MESSAGES
     global AUTHENTICATED_MESSAGES
-    global VALID_SENDERS
+    global ALLOWED_DOMAINS
     global BAIL
     global CACHE_FILE_PATH
     while True:
@@ -183,6 +185,9 @@ def message_authentication_thread():
             jwstoken.deserialize(content)
             dns_uri = jwstoken.jose_header["x5u"]
             sender_id = Util.get_name_from_dns_uri(dns_uri)
+            if not sender_id_in_allowed_domains(sender_id, ALLOWED_DOMAINS):
+                print("Sender {} rejected, not in allowed domains!".format(sender_id))
+                continue
             print("Message is authentic from {}".format(sender_id))
             message = "{} says: {}".format(sender_id, contents.decode())
             update_cache_file(message, CACHE_FILE_PATH)
@@ -191,6 +196,14 @@ def message_authentication_thread():
             print("Failed to authenticate! ({})".format(err))
         except InvalidJWSObject as err:
             print("Unable to load JWS object: {}".format(err))
+
+
+def sender_id_in_allowed_domains(sender_id, allowed_domains):
+    """Return True if sender_id is found inder any of allowed_domains."""
+    for domain in allowed_domains:
+        if dnsname_in_domain(sender_id, domain):
+            return True
+    return False
 
 
 def message_is_authentic(content):
@@ -225,7 +238,7 @@ def message_is_authentic(content):
 def update_cache_file(message, file_path):
     """Append message cache file."""
     with open(file_path, "a") as f:
-        update_line = "{}|{}".format(datetime.datetime.now().isoformat(), base64.b64encode(message))
+        update_line = "{}|{}".format(datetime.datetime.now().isoformat(), base64.b64encode(message.encode()))
         f.write(update_line)
 
 
